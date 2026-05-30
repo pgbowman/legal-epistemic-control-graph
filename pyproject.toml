@@ -44,8 +44,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/pgbowman/hitl-graphrag-legal-reference-model"
-Documentation = "https://github.com/pgbowman/hitl-graphrag-legal-reference-model#readme"
+Homepage = "https://github.com/pgbowman/legal-epistemic-control-graph"
+Documentation = "https://github.com/pgbowman/legal-epistemic-control-graph#readme"
 
 [tool.setuptools.packages.find]
 where = ["."]
