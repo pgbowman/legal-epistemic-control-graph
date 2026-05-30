@@ -348,59 +348,129 @@ def _counsel_review_box(pdf: ExceptionReportPDF) -> None:
     pdf.set_draw_color(0, 0, 0)
 
 
+def _meta_strip(pdf: ExceptionReportPDF, finding: dict) -> None:
+    """A compact one-line metadata strip under the finding title."""
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(20, 6, "Severity:")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(28, 6, finding["severity"].upper())
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(24, 6, "Policy area:")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(48, 6, finding["policy_area"])
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(14, 6, "Type:")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, finding["finding_type"], new_x="LMARGIN", new_y="NEXT")
+
+
+def _evidence_block(pdf: ExceptionReportPDF, span: dict) -> None:
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 6, "1. Source Evidence", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(95, 95, 95)
+    info = (
+        f"{span.get('section_label','')}  -  span {span.get('span_id','')}  "
+        f"(chars {span.get('char_start','')}-{span.get('char_end','')})  -  "
+        f"hash {span.get('text_hash','')}"
+    )
+    pdf.multi_cell(0, 4.5, info, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(0.5)
+    # Quote bar to the left of the excerpt
+    start_y = pdf.get_y()
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_x(pdf.l_margin + 3)
+    pdf.multi_cell(pdf.w - pdf.l_margin - pdf.r_margin - 3, 5, span.get("text", ""), new_x="LMARGIN", new_y="NEXT")
+    end_y = pdf.get_y()
+    pdf.set_draw_color(150, 150, 150)
+    pdf.set_line_width(0.5)
+    pdf.line(pdf.l_margin, start_y, pdf.l_margin, end_y - 1)
+    pdf.set_line_width(0.2)
+    pdf.set_draw_color(0, 0, 0)
+
+
+def _claim_block(pdf: ExceptionReportPDF, finding: dict) -> None:
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 6, f"2. AI-Proposed Claim  -  {finding['claim_id']}", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.multi_cell(0, 5, finding["claim_text"], new_x="LMARGIN", new_y="NEXT")
+
+
+def _policy_tension_block(pdf: ExceptionReportPDF, finding: dict) -> None:
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 6, "3. Policy Tension", new_x="LMARGIN", new_y="NEXT")
+    policy = finding.get("policy") or {}
+    # Highlighted relationship tag: "TENSIONS_WITH  POL-INDEM-001 v3.1"
+    tag_text = f"  TENSIONS_WITH  -  {policy.get('policy_id','')} v{policy.get('version','')}  ({policy.get('policy_name','')})  "
+    pdf.set_font("Helvetica", "B", 10)
+    text_w = pdf.get_string_width(tag_text) + 2
+    pdf.set_fill_color(240, 230, 200)
+    pdf.set_draw_color(170, 130, 60)
+    pdf.cell(text_w, 6.5, tag_text, border=1, fill=True, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_fill_color(255, 255, 255)
+    pdf.set_draw_color(0, 0, 0)
+    pdf.ln(0.5)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.multi_cell(0, 5, policy.get("rule_text", ""), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(0.5)
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(80, 80, 80)
+    pdf.multi_cell(0, 4.5, f"Why this matters: {finding['explanation']}", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0, 0, 0)
+
+
+def _provenance_trail_block(pdf: ExceptionReportPDF, finding: dict) -> None:
+    """Single-line provenance trail with bold relationship labels."""
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 6, "4. Provenance Trail", new_x="LMARGIN", new_y="NEXT")
+
+    # Render as: SourceSpan --GROUNDED_IN--> Claim --EXTRACTED_BY--> ModelRun
+    #            Claim --TENSIONS_WITH--> Policy   |   Finding --BASED_ON--> Claim
+    def _segment(label_left: str, rel: str, label_right: str) -> None:
+        pdf.set_font("Helvetica", "", 9)
+        pdf.cell(pdf.get_string_width(label_left) + 1, 5, label_left)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(pdf.get_string_width(f" --{rel}--> ") + 1, 5, f" --{rel}--> ")
+        pdf.set_font("Helvetica", "", 9)
+        pdf.cell(pdf.get_string_width(label_right) + 1, 5, label_right)
+
+    pdf.set_x(pdf.l_margin)
+    _segment("SourceSpan", "GROUNDED_IN", "Claim")
+    pdf.ln(5)
+    _segment("Claim", "EXTRACTED_BY", "ModelRun")
+    pdf.ln(5)
+    _segment("Claim", "TENSIONS_WITH", "Policy")
+    pdf.ln(5)
+    _segment("RiskFinding", "BASED_ON", "Claim")
+    pdf.ln(5)
+
+
 def render_finding_detail(pdf: ExceptionReportPDF, finding: dict) -> None:
     pdf.add_page()
-    _h1(pdf, f"Finding {finding['finding_id']}")
-    _kv(pdf, "Type", finding["finding_type"])
-    _kv(pdf, "Severity", finding["severity"])
-    _kv(pdf, "Policy area", finding["policy_area"])
-    _kv(pdf, "Reportable", "Yes" if finding["reportable"] else "No")
-    _rule(pdf)
 
-    _h2(pdf, "1. Source Evidence")
-    span = finding["span"]
+    # Compact header strip
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 8, f"Finding {finding['finding_id']}", new_x="LMARGIN", new_y="NEXT")
+    _meta_strip(pdf, finding)
+    _rule(pdf, y_offset=0.5)
+
+    span = finding.get("span") or {}
     if span:
-        _kv(pdf, "Span ID", span.get("span_id", ""))
-        _kv(pdf, "Section", span.get("section_label", ""))
-        _kv(pdf, "Offsets", f"{span.get('char_start','')}-{span.get('char_end','')}")
-        _kv(pdf, "Text hash", span.get("text_hash", ""))
-        pdf.ln(1)
-        _h3(pdf, "Excerpt")
-        _para(pdf, span.get("text", ""))
-    _rule(pdf)
+        _evidence_block(pdf, span)
+    _rule(pdf, y_offset=0.5)
 
-    _h2(pdf, "2. AI-Proposed Claim")
-    _kv(pdf, "Claim ID", finding["claim_id"])
-    _para(pdf, finding["claim_text"])
-    _rule(pdf)
+    _claim_block(pdf, finding)
+    _rule(pdf, y_offset=0.5)
 
-    _h2(pdf, "3. Policy Tension")
-    policy = finding["policy"]
-    if policy:
-        _kv(pdf, "Policy ID", policy.get("policy_id", ""))
-        _kv(pdf, "Policy", policy.get("policy_name", ""))
-        _kv(pdf, "Version", policy.get("version", ""))
-        _kv(pdf, "Owner", policy.get("owner", ""))
-        _kv(pdf, "Tolerance", policy.get("risk_tolerance", ""))
-        pdf.ln(1)
-        _h3(pdf, "Rule")
-        _para(pdf, policy.get("rule_text", ""))
-    pdf.ln(1)
-    _h3(pdf, "Explanation")
-    _para(pdf, finding["explanation"])
-    _rule(pdf)
+    _policy_tension_block(pdf, finding)
+    _rule(pdf, y_offset=0.5)
 
-    _h2(pdf, "4. Provenance Trail")
-    clause = finding.get("clause") or {}
-    if clause:
-        _kv(pdf, "Vendor clause", f"{clause.get('clause_id','')} ({clause.get('source_status','')})")
-    _kv(pdf, "Span -> Claim", "GROUNDED_IN")
-    _kv(pdf, "Claim -> ModelRun", "EXTRACTED_BY")
-    _kv(pdf, "Claim -> Policy", "TENSIONS_WITH")
-    _kv(pdf, "Finding -> Claim", "BASED_ON")
-    _rule(pdf)
+    _provenance_trail_block(pdf, finding)
+    _rule(pdf, y_offset=0.5)
 
-    _h2(pdf, "5. Counsel Review")
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 6, "5. Counsel Review", new_x="LMARGIN", new_y="NEXT")
     _counsel_review_box(pdf)
 
 

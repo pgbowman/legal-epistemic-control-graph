@@ -20,21 +20,23 @@ This system does not "solve hallucinations." It contains hallucination risk by p
 
 ---
 
+## What the Output Looks Like
+
+The pipeline generates a single-page-per-finding exception report for counsel. Each finding shows the source excerpt, the AI claim, the **`TENSIONS_WITH`** relationship against a specific policy, and a counsel review box — on one page, so the authority boundary is visible at a glance.
+
+[![Sample finding page — source evidence, AI claim, TENSIONS_WITH policy tag, counsel review checkboxes](docs/assets/exception_report_preview.png)](docs/assets/sample_exception_report.pdf)
+
+> The highlighted **`TENSIONS_WITH - POL-INDEM-001 v3.1`** tag is the AI's proposed conflict. The checkboxes below it are where the lawyer decides. The graph keeps the two separate so the AI proposes and counsel disposes.
+
+Full PDF: [`docs/assets/sample_exception_report.pdf`](docs/assets/sample_exception_report.pdf)
+
+---
+
 ## Why This Exists
 
 Many enterprise AI demos treat generation as the final artifact. In legal and compliance workflows, generation is only a proposal. The durable artifact is the review record: what source text was considered, what interpretation was proposed, what policy it tensioned with, and what an authorized human decided.
 
 This repository models that review record.
-
----
-
-## Sample Output
-
-The pipeline generates a lawyer-facing exception report for human review.
-
-See: [`docs/assets/sample_exception_report.pdf`](docs/assets/sample_exception_report.pdf)
-
-![Exception report preview](docs/assets/exception_report_preview.png)
 
 ---
 
