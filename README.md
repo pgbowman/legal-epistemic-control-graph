@@ -2,7 +2,7 @@
 
 > AI proposes; counsel disposes.
 
-A reference architecture for auditable semantic extraction, source-span-grounded claims, and non-destructive human review.
+A human-in-the-loop GraphRAG reference model for auditable AI-assisted legal review.
 
 This repository is a compact reference model for preserving provenance, review authority, and model-independent curation history in high-stakes legal/compliance AI workflows.
 
