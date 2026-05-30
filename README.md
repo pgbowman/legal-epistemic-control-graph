@@ -1,4 +1,4 @@
-# Human-in-the-Loop GraphRAG Legal Reference Model
+# Legal Epistemic Control Graph
 
 > AI proposes; counsel disposes.
 
@@ -122,7 +122,8 @@ For an explicit threat model — what kinds of model error this architecture is 
 ## Run Locally
 
 ```bash
-cd /Projects/hitl-graphrag-legal-reference-model
+git clone https://github.com/pgbowman/legal-epistemic-control-graph.git
+cd legal-epistemic-control-graph
 cp .env.example .env
 pip install -e .
 python -m src.validate
