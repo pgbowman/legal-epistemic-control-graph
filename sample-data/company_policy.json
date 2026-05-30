@@ -1,0 +1,73 @@
+{
+  "document": {
+    "document_id": "DOC-POLICY-001",
+    "title": "Company Contracting Policy (Vendor Agreements)",
+    "document_type": "company_policy",
+    "version": "3.1",
+    "effective_date": "2025-01-15",
+    "source_system": "policy-portal",
+    "created_at": "2025-01-15T00:00:00Z"
+  },
+  "policies": [
+    {
+      "policy_id": "POL-INDEM-001",
+      "policy_name": "Vendor Indemnification Standard",
+      "policy_type": "indemnification",
+      "version": "3.1",
+      "rule_text": "Vendor must indemnify Company for third-party claims arising from Vendor's breach, negligence, willful misconduct, data security failures, or IP infringement. Mutual or narrow indemnity (e.g., only for finally adjudicated claims) is not acceptable without GC approval.",
+      "risk_tolerance": "low",
+      "owner": "Legal",
+      "effective_date": "2025-01-15"
+    },
+    {
+      "policy_id": "POL-LOL-001",
+      "policy_name": "Liability Cap Carveouts",
+      "policy_type": "limitation_of_liability",
+      "version": "3.1",
+      "rule_text": "Liability caps must exclude (carve out) indemnification obligations, confidentiality breaches, data security obligations, and IP infringement. Including these obligations within the cap is not acceptable.",
+      "risk_tolerance": "low",
+      "owner": "Legal",
+      "effective_date": "2025-01-15"
+    },
+    {
+      "policy_id": "POL-PAY-001",
+      "policy_name": "Standard Payment Terms",
+      "policy_type": "payment_terms",
+      "version": "3.1",
+      "rule_text": "Default payment terms are Net-30 after receipt of a valid invoice. Net-60 may be approved by Procurement. Net-90 or longer requires CFO approval.",
+      "risk_tolerance": "medium",
+      "owner": "Procurement",
+      "effective_date": "2025-01-15"
+    },
+    {
+      "policy_id": "POL-DATASEC-001",
+      "policy_name": "Vendor Data Security Obligations",
+      "policy_type": "data_security",
+      "version": "3.1",
+      "rule_text": "Vendors handling Company data must maintain industry-standard security controls, notify Company of incidents within 72 hours, and accept uncapped liability for data security breaches.",
+      "risk_tolerance": "low",
+      "owner": "Security",
+      "effective_date": "2025-01-15"
+    },
+    {
+      "policy_id": "POL-IP-001",
+      "policy_name": "IP Infringement Indemnity",
+      "policy_type": "ip_infringement",
+      "version": "3.1",
+      "rule_text": "Vendor must indemnify Company for any third-party IP infringement claim arising from Vendor's services or deliverables. This obligation may not be capped or limited to finally adjudicated claims.",
+      "risk_tolerance": "low",
+      "owner": "Legal",
+      "effective_date": "2025-01-15"
+    },
+    {
+      "policy_id": "POL-REMEDY-001",
+      "policy_name": "Sole and Exclusive Remedy Restrictions",
+      "policy_type": "governance",
+      "version": "3.1",
+      "rule_text": "Contracts must not designate any single remedy as 'sole and exclusive' for Company. Cumulative remedies must be preserved.",
+      "risk_tolerance": "medium",
+      "owner": "Legal",
+      "effective_date": "2025-01-15"
+    }
+  ]
+}

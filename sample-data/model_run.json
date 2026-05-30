@@ -1,0 +1,9 @@
+{
+  "model_run_id": "RUN-2026-05-15-001",
+  "model_name": "stubbed-llm",
+  "model_version": "v0.1-reference",
+  "prompt_version": "prompt-contract-risk-001",
+  "run_timestamp": "2026-05-15T15:00:00Z",
+  "extraction_mode": "stubbed",
+  "notes": "Synthetic deterministic extraction for the reference model. No external LLM API was called. Outputs are loaded from sample-data/expected_findings.json."
+}

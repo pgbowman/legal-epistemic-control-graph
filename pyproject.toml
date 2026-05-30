@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hitl-graphrag-legal-reference-model"
+version = "0.1.0"
+description = "Human-in-the-Loop GraphRAG reference model for legal and compliance review."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "HITL GraphRAG Reference Model" }
+]
+keywords = [
+    "graphrag",
+    "human-in-the-loop",
+    "legal-tech",
+    "compliance",
+    "neo4j",
+    "epistemic-control",
+    "reference-model"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Legal Industry",
+    "Intended Audience :: Information Technology",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis"
+]
+dependencies = [
+    "neo4j>=5.20",
+    "jsonschema>=4.21",
+    "fpdf2>=2.7",
+    "python-dotenv>=1.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/hitl-graphrag-legal-reference-model"
+Documentation = "https://github.com/your-org/hitl-graphrag-legal-reference-model#readme"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,87 @@
+{
+  "document": {
+    "document_id": "DOC-BASELINE-MSA-001",
+    "title": "Standard Master Services Agreement (Baseline Template)",
+    "document_type": "baseline_msa",
+    "version": "2.0",
+    "effective_date": "2025-01-01",
+    "source_system": "internal-clm-templates",
+    "created_at": "2025-01-01T00:00:00Z"
+  },
+  "spans": [
+    {
+      "span_id": "SPAN-BASE-INDEM-001",
+      "document_id": "DOC-BASELINE-MSA-001",
+      "section_label": "Section 5. Indemnification",
+      "char_start": 0,
+      "char_end": 312,
+      "text": "Vendor shall defend, indemnify, and hold harmless Company from and against any and all third-party claims, losses, damages, liabilities, and expenses (including reasonable attorneys' fees) arising from (a) Vendor's breach of this Agreement, (b) Vendor's negligence or willful misconduct, (c) Vendor's failure to comply with applicable data security requirements, or (d) any claim that the Services or deliverables infringe a third party's intellectual property rights.",
+      "text_hash": "sha256:baseline-indem-001"
+    },
+    {
+      "span_id": "SPAN-BASE-LOL-001",
+      "document_id": "DOC-BASELINE-MSA-001",
+      "section_label": "Section 6. Limitation of Liability",
+      "char_start": 313,
+      "char_end": 612,
+      "text": "Except for liability arising from (i) indemnification obligations, (ii) breach of confidentiality, (iii) breach of data security obligations, or (iv) infringement of intellectual property rights, each party's aggregate liability under this Agreement shall not exceed the fees paid in the twelve (12) months preceding the claim.",
+      "text_hash": "sha256:baseline-lol-001"
+    },
+    {
+      "span_id": "SPAN-BASE-PAY-001",
+      "document_id": "DOC-BASELINE-MSA-001",
+      "section_label": "Section 8. Payment Terms",
+      "char_start": 613,
+      "char_end": 812,
+      "text": "Company shall pay all undisputed amounts within thirty (30) days following receipt of a valid invoice. Disputed amounts shall be resolved in accordance with Section 14 (Dispute Resolution).",
+      "text_hash": "sha256:baseline-pay-001"
+    },
+    {
+      "span_id": "SPAN-BASE-GOV-001",
+      "document_id": "DOC-BASELINE-MSA-001",
+      "section_label": "Section 15. Governing Law",
+      "char_start": 813,
+      "char_end": 1010,
+      "text": "This Agreement shall be governed by and construed in accordance with the laws of the State of New York, without regard to its conflict of laws principles. The parties consent to exclusive jurisdiction in the state and federal courts located in New York County, New York.",
+      "text_hash": "sha256:baseline-gov-001"
+    }
+  ],
+  "clauses": [
+    {
+      "clause_id": "CLAUSE-BASE-INDEM-001",
+      "clause_type": "indemnification",
+      "normalized_title": "Indemnification (Baseline)",
+      "jurisdiction": "NY",
+      "source_status": "baseline",
+      "document_id": "DOC-BASELINE-MSA-001",
+      "span_ids": ["SPAN-BASE-INDEM-001"]
+    },
+    {
+      "clause_id": "CLAUSE-BASE-LOL-001",
+      "clause_type": "limitation_of_liability",
+      "normalized_title": "Limitation of Liability (Baseline)",
+      "jurisdiction": "NY",
+      "source_status": "baseline",
+      "document_id": "DOC-BASELINE-MSA-001",
+      "span_ids": ["SPAN-BASE-LOL-001"]
+    },
+    {
+      "clause_id": "CLAUSE-BASE-PAY-001",
+      "clause_type": "payment_terms",
+      "normalized_title": "Payment Terms (Baseline)",
+      "jurisdiction": "NY",
+      "source_status": "baseline",
+      "document_id": "DOC-BASELINE-MSA-001",
+      "span_ids": ["SPAN-BASE-PAY-001"]
+    },
+    {
+      "clause_id": "CLAUSE-BASE-GOV-001",
+      "clause_type": "governing_law",
+      "normalized_title": "Governing Law (Baseline)",
+      "jurisdiction": "NY",
+      "source_status": "baseline",
+      "document_id": "DOC-BASELINE-MSA-001",
+      "span_ids": ["SPAN-BASE-GOV-001"]
+    }
+  ]
+}

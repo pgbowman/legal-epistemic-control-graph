@@ -1,0 +1,103 @@
+{
+  "document": {
+    "document_id": "DOC-VENDOR-DRAFT-001",
+    "title": "Vendor Services Agreement (Vendor Draft) - Acme Analytics Inc.",
+    "document_type": "vendor_draft",
+    "version": "1.0",
+    "effective_date": "2026-05-01",
+    "source_system": "vendor-submitted",
+    "created_at": "2026-05-15T14:30:00Z"
+  },
+  "spans": [
+    {
+      "span_id": "SPAN-VEN-INDEM-001",
+      "document_id": "DOC-VENDOR-DRAFT-001",
+      "section_label": "Section 5. Indemnification",
+      "char_start": 0,
+      "char_end": 298,
+      "text": "Each party shall indemnify the other party solely for third-party claims that have been finally adjudicated by a court of competent jurisdiction to have arisen from the indemnifying party's gross negligence or willful misconduct. No other indemnification obligations apply under this Agreement.",
+      "text_hash": "sha256:vendor-indem-001"
+    },
+    {
+      "span_id": "SPAN-VEN-LOL-001",
+      "document_id": "DOC-VENDOR-DRAFT-001",
+      "section_label": "Section 6. Limitation of Liability",
+      "char_start": 299,
+      "char_end": 567,
+      "text": "Notwithstanding anything to the contrary herein, each party's total aggregate liability under this Agreement, including any liability arising from indemnification, confidentiality, data security, or intellectual property infringement, shall not exceed the fees paid in the three (3) months preceding the claim.",
+      "text_hash": "sha256:vendor-lol-001"
+    },
+    {
+      "span_id": "SPAN-VEN-PAY-001",
+      "document_id": "DOC-VENDOR-DRAFT-001",
+      "section_label": "Section 8. Payment Terms",
+      "char_start": 568,
+      "char_end": 720,
+      "text": "Customer shall pay all invoiced amounts within ninety (90) days following the invoice date. Late payments shall accrue interest at 1.5% per month.",
+      "text_hash": "sha256:vendor-pay-001"
+    },
+    {
+      "span_id": "SPAN-VEN-REM-001",
+      "document_id": "DOC-VENDOR-DRAFT-001",
+      "section_label": "Section 10. Remedies",
+      "char_start": 721,
+      "char_end": 905,
+      "text": "The remedies expressly set forth in this Agreement shall be the sole and exclusive remedies available to Customer for any breach, default, or other claim arising out of or relating to this Agreement.",
+      "text_hash": "sha256:vendor-rem-001"
+    }
+  ],
+  "clauses": [
+    {
+      "clause_id": "CLAUSE-VEN-INDEM-001",
+      "clause_type": "indemnification",
+      "normalized_title": "Indemnification (Vendor Draft)",
+      "jurisdiction": "NY",
+      "source_status": "vendor_proposed",
+      "document_id": "DOC-VENDOR-DRAFT-001",
+      "span_ids": ["SPAN-VEN-INDEM-001"]
+    },
+    {
+      "clause_id": "CLAUSE-VEN-LOL-001",
+      "clause_type": "limitation_of_liability",
+      "normalized_title": "Limitation of Liability (Vendor Draft)",
+      "jurisdiction": "NY",
+      "source_status": "vendor_proposed",
+      "document_id": "DOC-VENDOR-DRAFT-001",
+      "span_ids": ["SPAN-VEN-LOL-001"]
+    },
+    {
+      "clause_id": "CLAUSE-VEN-PAY-001",
+      "clause_type": "payment_terms",
+      "normalized_title": "Payment Terms (Vendor Draft)",
+      "jurisdiction": "NY",
+      "source_status": "vendor_proposed",
+      "document_id": "DOC-VENDOR-DRAFT-001",
+      "span_ids": ["SPAN-VEN-PAY-001"]
+    },
+    {
+      "clause_id": "CLAUSE-VEN-REM-001",
+      "clause_type": "remedies",
+      "normalized_title": "Remedies (Vendor Draft)",
+      "jurisdiction": "NY",
+      "source_status": "vendor_proposed",
+      "document_id": "DOC-VENDOR-DRAFT-001",
+      "span_ids": ["SPAN-VEN-REM-001"]
+    }
+  ],
+  "experts": [
+    {
+      "expert_id": "EXPERT-001",
+      "name": "Jordan Chen",
+      "role": "Senior Counsel, Commercial Contracts",
+      "bar_jurisdiction": "NY",
+      "organization": "Company Inc. (In-House Legal)"
+    },
+    {
+      "expert_id": "EXPERT-002",
+      "name": "Morgan Reyes",
+      "role": "General Counsel",
+      "bar_jurisdiction": "NY",
+      "organization": "Company Inc. (In-House Legal)"
+    }
+  ]
+}

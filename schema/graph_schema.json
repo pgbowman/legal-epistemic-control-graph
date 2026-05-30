@@ -1,0 +1,394 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HITL GraphRAG Legal Reference Model Schema",
+  "description": "Schema for the graph of documents, source spans, clauses, policies, claims, findings, reviews, and model runs.",
+  "type": "object",
+  "definitions": {
+    "Document": {
+      "type": "object",
+      "required": [
+        "document_id",
+        "title",
+        "document_type",
+        "version",
+        "effective_date",
+        "source_system",
+        "created_at"
+      ],
+      "properties": {
+        "document_id": { "type": "string" },
+        "title": { "type": "string" },
+        "document_type": {
+          "type": "string",
+          "enum": ["baseline_msa", "company_policy", "vendor_draft", "amendment", "other"]
+        },
+        "version": { "type": "string" },
+        "effective_date": { "type": "string", "format": "date" },
+        "source_system": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "SourceSpan": {
+      "type": "object",
+      "required": [
+        "span_id",
+        "document_id",
+        "section_label",
+        "char_start",
+        "char_end",
+        "text",
+        "text_hash"
+      ],
+      "properties": {
+        "span_id": { "type": "string" },
+        "document_id": { "type": "string" },
+        "section_label": { "type": "string" },
+        "char_start": { "type": "integer", "minimum": 0 },
+        "char_end": { "type": "integer", "minimum": 0 },
+        "text": { "type": "string" },
+        "text_hash": { "type": "string" }
+      }
+    },
+    "Clause": {
+      "type": "object",
+      "required": [
+        "clause_id",
+        "clause_type",
+        "normalized_title",
+        "jurisdiction",
+        "source_status"
+      ],
+      "properties": {
+        "clause_id": { "type": "string" },
+        "clause_type": {
+          "type": "string",
+          "enum": [
+            "indemnification",
+            "limitation_of_liability",
+            "payment_terms",
+            "governing_law",
+            "confidentiality",
+            "data_security",
+            "ip_infringement",
+            "remedies",
+            "other"
+          ]
+        },
+        "normalized_title": { "type": "string" },
+        "jurisdiction": { "type": "string" },
+        "source_status": {
+          "type": "string",
+          "enum": ["baseline", "vendor_proposed", "negotiated", "executed"]
+        },
+        "document_id": { "type": "string" },
+        "span_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Policy": {
+      "type": "object",
+      "required": [
+        "policy_id",
+        "policy_name",
+        "policy_type",
+        "version",
+        "rule_text",
+        "risk_tolerance",
+        "owner",
+        "effective_date"
+      ],
+      "properties": {
+        "policy_id": { "type": "string" },
+        "policy_name": { "type": "string" },
+        "policy_type": {
+          "type": "string",
+          "enum": [
+            "indemnification",
+            "limitation_of_liability",
+            "payment_terms",
+            "data_security",
+            "ip_infringement",
+            "governance",
+            "other"
+          ]
+        },
+        "version": { "type": "string" },
+        "rule_text": { "type": "string" },
+        "risk_tolerance": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "owner": { "type": "string" },
+        "effective_date": { "type": "string", "format": "date" }
+      }
+    },
+    "Claim": {
+      "type": "object",
+      "required": [
+        "claim_id",
+        "claim_text",
+        "claim_type",
+        "confidence",
+        "status",
+        "created_at"
+      ],
+      "properties": {
+        "claim_id": { "type": "string" },
+        "claim_text": { "type": "string" },
+        "claim_type": {
+          "type": "string",
+          "enum": [
+            "clause_assertion",
+            "policy_tension",
+            "policy_compliance",
+            "liability_creation",
+            "clause_amendment",
+            "other"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "superseded", "withdrawn"]
+        },
+        "created_at": { "type": "string", "format": "date-time" },
+        "span_id": { "type": "string" },
+        "policy_id": { "type": "string" },
+        "clause_id": { "type": "string" },
+        "model_run_id": { "type": "string" }
+      }
+    },
+    "RiskFinding": {
+      "type": "object",
+      "required": [
+        "finding_id",
+        "finding_type",
+        "severity",
+        "finding_summary",
+        "proposed_status",
+        "created_at",
+        "reportable"
+      ],
+      "properties": {
+        "finding_id": { "type": "string" },
+        "finding_type": {
+          "type": "string",
+          "enum": [
+            "indemnification_narrowed",
+            "liability_cap_carveout_breach",
+            "payment_terms_out_of_policy",
+            "remedy_restriction",
+            "data_security_obligation_gap",
+            "ip_obligation_gap",
+            "other"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "finding_summary": { "type": "string" },
+        "proposed_status": {
+          "type": "string",
+          "enum": ["proposed", "approved_concession", "rejected", "escalated"]
+        },
+        "created_at": { "type": "string", "format": "date-time" },
+        "reportable": { "type": "boolean" },
+        "claim_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "ReviewDecision": {
+      "type": "object",
+      "required": [
+        "decision_id",
+        "decision",
+        "rationale",
+        "decided_at",
+        "authority_level"
+      ],
+      "properties": {
+        "decision_id": { "type": "string" },
+        "decision": {
+          "type": "string",
+          "enum": ["approved_concession", "rejected", "escalated"]
+        },
+        "rationale": { "type": "string" },
+        "decided_at": { "type": "string", "format": "date-time" },
+        "authority_level": {
+          "type": "string",
+          "enum": ["associate", "senior_counsel", "general_counsel", "compliance_officer", "external"]
+        },
+        "expert_id": { "type": "string" },
+        "finding_id": { "type": "string" },
+        "supersedes_decision_id": { "type": ["string", "null"] }
+      }
+    },
+    "Expert": {
+      "type": "object",
+      "required": [
+        "expert_id",
+        "name",
+        "role",
+        "bar_jurisdiction",
+        "organization"
+      ],
+      "properties": {
+        "expert_id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "bar_jurisdiction": { "type": "string" },
+        "organization": { "type": "string" }
+      }
+    },
+    "ModelRun": {
+      "type": "object",
+      "required": [
+        "model_run_id",
+        "model_name",
+        "model_version",
+        "prompt_version",
+        "run_timestamp",
+        "extraction_mode"
+      ],
+      "properties": {
+        "model_run_id": { "type": "string" },
+        "model_name": { "type": "string" },
+        "model_version": { "type": "string" },
+        "prompt_version": { "type": "string" },
+        "run_timestamp": { "type": "string", "format": "date-time" },
+        "extraction_mode": {
+          "type": "string",
+          "enum": ["stubbed", "zero_shot", "few_shot", "fine_tuned", "deterministic"]
+        }
+      }
+    },
+    "ExpectedFinding": {
+      "type": "object",
+      "required": [
+        "finding_id",
+        "claim_id",
+        "model_run_id",
+        "span_id",
+        "policy_id",
+        "claim_text",
+        "finding_type",
+        "severity",
+        "explanation",
+        "reportable"
+      ],
+      "properties": {
+        "finding_id": { "type": "string" },
+        "claim_id": { "type": "string" },
+        "model_run_id": { "type": "string" },
+        "span_id": { "type": "string" },
+        "policy_id": { "type": "string" },
+        "claim_text": { "type": "string" },
+        "claim_type": { "type": "string" },
+        "finding_type": { "type": "string" },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "explanation": { "type": "string" },
+        "reportable": { "type": "boolean" },
+        "clause_id": { "type": ["string", "null"] },
+        "relationship_to_policy": {
+          "type": "string",
+          "enum": [
+            "TENSIONS_WITH",
+            "COMPLIES_WITH",
+            "CREATES_LIABILITY_UNDER"
+          ]
+        },
+        "amends_clause_id": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "relationships": {
+    "CONTAINS": {
+      "from": "Document",
+      "to": "SourceSpan",
+      "description": "A document contains one or more addressable source spans."
+    },
+    "HAS_SPAN": {
+      "from": "Clause",
+      "to": "SourceSpan",
+      "description": "A clause is derived from one or more source spans."
+    },
+    "GROUNDED_IN": {
+      "from": "Claim",
+      "to": "SourceSpan",
+      "description": "A claim must be grounded in addressable source text."
+    },
+    "EXTRACTED_BY": {
+      "from": "Claim",
+      "to": "ModelRun",
+      "description": "Every claim records which model run proposed it."
+    },
+    "BASED_ON": {
+      "from": "RiskFinding",
+      "to": "Claim",
+      "description": "Findings are derived from one or more claims."
+    },
+    "ASSERTS": {
+      "from": "Claim",
+      "to": "Clause",
+      "description": "A claim asserts a clause interpretation."
+    },
+    "TENSIONS_WITH": {
+      "from": "Claim",
+      "to": "Policy",
+      "description": "A claim is in tension with a baseline policy."
+    },
+    "COMPLIES_WITH": {
+      "from": "Claim",
+      "to": "Policy",
+      "description": "A claim complies with a baseline policy."
+    },
+    "CREATES_LIABILITY_UNDER": {
+      "from": "Claim",
+      "to": "Policy",
+      "description": "A claim creates liability under an applicable policy."
+    },
+    "AMENDS_CLAUSE": {
+      "from": "Claim",
+      "to": "Clause",
+      "description": "A claim proposes an amendment to a clause."
+    },
+    "REVIEWS": {
+      "from": "ReviewDecision",
+      "to": "RiskFinding",
+      "description": "A human review decision reviews a risk finding."
+    },
+    "MADE_BY": {
+      "from": "ReviewDecision",
+      "to": "Expert",
+      "description": "A review decision was made by a specific expert."
+    },
+    "SUPERSEDES_DECISION": {
+      "from": "ReviewDecision",
+      "to": "ReviewDecision",
+      "description": "A later decision supersedes an earlier decision, non-destructively."
+    },
+    "SUPERSEDES_POLICY": {
+      "from": "Policy",
+      "to": "Policy",
+      "description": "A policy supersedes a prior version, non-destructively."
+    }
+  },
+  "validation_rules": [
+    "Every Claim MUST connect to exactly one ModelRun via EXTRACTED_BY.",
+    "Every Claim MUST connect to at least one SourceSpan via GROUNDED_IN.",
+    "Every RiskFinding MUST connect to at least one Claim via BASED_ON.",
+    "ReviewDecision nodes MUST never be deleted; later decisions create SUPERSEDES edges.",
+    "Policy upgrades MUST never be deleted; later versions create SUPERSEDES edges.",
+    "Claim status transitions are constrained to: proposed -> superseded, proposed -> withdrawn.",
+    "RiskFinding.proposed_status reflects the most recent linked ReviewDecision.decision; the underlying finding text is immutable."
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "model_run_id": "RUN-2026-05-15-001",
+  "findings": [
+    {
+      "finding_id": "FINDING-001",
+      "claim_id": "CLAIM-001",
+      "model_run_id": "RUN-2026-05-15-001",
+      "span_id": "SPAN-VEN-INDEM-001",
+      "policy_id": "POL-INDEM-001",
+      "clause_id": "CLAUSE-VEN-INDEM-001",
+      "claim_text": "The vendor draft narrows indemnification to mutual, only-finally-adjudicated, gross-negligence/willful-misconduct claims. This is materially narrower than the baseline vendor-indemnifies-Company standard and eliminates indemnity for data security failures and IP infringement.",
+      "claim_type": "policy_tension",
+      "finding_type": "indemnification_narrowed",
+      "severity": "high",
+      "explanation": "The vendor's clause is mutual and restricted to finally adjudicated gross negligence or willful misconduct, dropping baseline coverage for breach, ordinary negligence, data security failures, and IP infringement. This conflicts with POL-INDEM-001.",
+      "reportable": true,
+      "relationship_to_policy": "TENSIONS_WITH",
+      "amends_clause_id": "CLAUSE-BASE-INDEM-001"
+    },
+    {
+      "finding_id": "FINDING-002",
+      "claim_id": "CLAIM-002",
+      "model_run_id": "RUN-2026-05-15-001",
+      "span_id": "SPAN-VEN-LOL-001",
+      "policy_id": "POL-LOL-001",
+      "clause_id": "CLAUSE-VEN-LOL-001",
+      "claim_text": "The vendor draft places indemnification, confidentiality, data security, and IP infringement liabilities within the aggregate liability cap, and reduces the cap to 3 months of fees.",
+      "claim_type": "policy_tension",
+      "finding_type": "liability_cap_carveout_breach",
+      "severity": "critical",
+      "explanation": "POL-LOL-001 requires carveouts for indemnification, confidentiality, data security, and IP infringement. The vendor draft expressly subsumes these into the cap, in direct conflict with the policy.",
+      "reportable": true,
+      "relationship_to_policy": "TENSIONS_WITH",
+      "amends_clause_id": "CLAUSE-BASE-LOL-001"
+    },
+    {
+      "finding_id": "FINDING-003",
+      "claim_id": "CLAIM-003",
+      "model_run_id": "RUN-2026-05-15-001",
+      "span_id": "SPAN-VEN-PAY-001",
+      "policy_id": "POL-PAY-001",
+      "clause_id": "CLAUSE-VEN-PAY-001",
+      "claim_text": "The vendor draft sets payment terms at Net-90 from invoice date, outside the company's baseline Net-30 policy and beyond Procurement's Net-60 approval threshold.",
+      "claim_type": "policy_tension",
+      "finding_type": "payment_terms_out_of_policy",
+      "severity": "medium",
+      "explanation": "POL-PAY-001 requires Net-30 with Procurement approval needed for Net-60 and CFO approval for Net-90+. The vendor's Net-90 from invoice date requires CFO sign-off.",
+      "reportable": true,
+      "relationship_to_policy": "TENSIONS_WITH",
+      "amends_clause_id": "CLAUSE-BASE-PAY-001"
+    },
+    {
+      "finding_id": "FINDING-004",
+      "claim_id": "CLAIM-004",
+      "model_run_id": "RUN-2026-05-15-001",
+      "span_id": "SPAN-VEN-REM-001",
+      "policy_id": "POL-REMEDY-001",
+      "clause_id": "CLAUSE-VEN-REM-001",
+      "claim_text": "The vendor draft designates contract remedies as 'sole and exclusive' for Customer, eliminating cumulative remedies otherwise available at law or equity.",
+      "claim_type": "policy_tension",
+      "finding_type": "remedy_restriction",
+      "severity": "medium",
+      "explanation": "POL-REMEDY-001 prohibits 'sole and exclusive' remedy designations for Company. The vendor draft directly violates this requirement.",
+      "reportable": true,
+      "relationship_to_policy": "TENSIONS_WITH",
+      "amends_clause_id": null
+    }
+  ]
+}

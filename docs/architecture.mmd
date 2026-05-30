@@ -1,0 +1,45 @@
+graph LR
+    %% Documents and source
+    D[Document]
+    S[SourceSpan]
+    C[Clause]
+    P[Policy]
+
+    %% AI provenance
+    MR[ModelRun]
+    CL[Claim]
+    RF[RiskFinding]
+
+    %% Human authority
+    RD[ReviewDecision]
+    E[Expert]
+
+    %% Provenance and structure
+    D -->|CONTAINS| S
+    C -->|HAS_SPAN| S
+    CL -->|GROUNDED_IN| S
+    CL -->|EXTRACTED_BY| MR
+    RF -->|BASED_ON| CL
+
+    %% Legal and compliance semantics
+    CL -->|ASSERTS| C
+    CL -->|TENSIONS_WITH| P
+    CL -->|COMPLIES_WITH| P
+    CL -->|CREATES_LIABILITY_UNDER| P
+    CL -->|AMENDS_CLAUSE| C
+
+    %% Human review
+    RD -->|REVIEWS| RF
+    RD -->|MADE_BY| E
+    RD -->|SUPERSEDES| RD
+
+    %% Policy version control
+    P -->|SUPERSEDES| P
+
+    classDef evidence fill:#eef6ff,stroke:#3b82f6,color:#1e3a8a
+    classDef ai fill:#fff7ed,stroke:#f97316,color:#7c2d12
+    classDef human fill:#ecfdf5,stroke:#10b981,color:#064e3b
+
+    class D,S,C,P evidence
+    class MR,CL,RF ai
+    class RD,E human
