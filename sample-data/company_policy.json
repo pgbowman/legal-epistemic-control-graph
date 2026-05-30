@@ -30,6 +30,16 @@
       "effective_date": "2025-01-15"
     },
     {
+      "policy_id": "POL-PAY-000",
+      "policy_name": "Standard Payment Terms (Superseded)",
+      "policy_type": "payment_terms",
+      "version": "2.0",
+      "rule_text": "Default payment terms are Net-45 after receipt of a valid invoice. Net-60 may be approved by Procurement.",
+      "risk_tolerance": "medium",
+      "owner": "Procurement",
+      "effective_date": "2023-06-01"
+    },
+    {
       "policy_id": "POL-PAY-001",
       "policy_name": "Standard Payment Terms",
       "policy_type": "payment_terms",
@@ -37,7 +47,8 @@
       "rule_text": "Default payment terms are Net-30 after receipt of a valid invoice. Net-60 may be approved by Procurement. Net-90 or longer requires CFO approval.",
       "risk_tolerance": "medium",
       "owner": "Procurement",
-      "effective_date": "2025-01-15"
+      "effective_date": "2025-01-15",
+      "supersedes_policy_id": "POL-PAY-000"
     },
     {
       "policy_id": "POL-DATASEC-001",
@@ -62,10 +73,20 @@
     {
       "policy_id": "POL-REMEDY-001",
       "policy_name": "Sole and Exclusive Remedy Restrictions",
-      "policy_type": "governance",
+      "policy_type": "remedies",
       "version": "3.1",
       "rule_text": "Contracts must not designate any single remedy as 'sole and exclusive' for Company. Cumulative remedies must be preserved.",
       "risk_tolerance": "medium",
+      "owner": "Legal",
+      "effective_date": "2025-01-15"
+    },
+    {
+      "policy_id": "POL-EQUITY-001",
+      "policy_name": "Equitable Remedies for Confidentiality, Data Security, and IP",
+      "policy_type": "remedies",
+      "version": "3.1",
+      "rule_text": "Contracts must preserve Company's right to seek injunctive relief and other equitable remedies for breaches of confidentiality, data security, or intellectual property obligations, in addition to (and not instead of) any contractual remedies.",
+      "risk_tolerance": "low",
       "owner": "Legal",
       "effective_date": "2025-01-15"
     }

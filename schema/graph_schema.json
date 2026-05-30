@@ -1,11 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "HITL GraphRAG Legal Reference Model Schema",
-  "description": "Schema for the graph of documents, source spans, clauses, policies, claims, findings, reviews, and model runs.",
+  "description": "Schema for the graph of documents, source spans, clauses, policies, claims, findings, reviews, and model runs. The graph is an epistemic control layer that separates evidence, AI interpretation, reviewable risk, and human authority.",
   "type": "object",
   "definitions": {
     "Document": {
       "type": "object",
+      "description": "A Document is an uploaded or template artifact that contains addressable source text. Documents are evidence containers, not interpretations.",
       "required": [
         "document_id",
         "title",
@@ -16,7 +17,7 @@
         "created_at"
       ],
       "properties": {
-        "document_id": { "type": "string" },
+        "document_id": { "type": "string", "description": "Stable identifier." },
         "title": { "type": "string" },
         "document_type": {
           "type": "string",
@@ -30,6 +31,7 @@
     },
     "SourceSpan": {
       "type": "object",
+      "description": "A SourceSpan is addressable, immutable evidence. Identified by document_id and character offsets, with a text hash for integrity. Every AI claim must be grounded in a SourceSpan.",
       "required": [
         "span_id",
         "document_id",
@@ -46,11 +48,12 @@
         "char_start": { "type": "integer", "minimum": 0 },
         "char_end": { "type": "integer", "minimum": 0 },
         "text": { "type": "string" },
-        "text_hash": { "type": "string" }
+        "text_hash": { "type": "string", "minLength": 1 }
       }
     },
     "Clause": {
       "type": "object",
+      "description": "A Clause is a legally meaningful unit derived from one or more SourceSpans. Clauses are normalized for type and jurisdiction.",
       "required": [
         "clause_id",
         "clause_type",
@@ -86,6 +89,7 @@
     },
     "Policy": {
       "type": "object",
+      "description": "A Policy is a company baseline rule or legal/compliance standard. Policies are versioned; newer versions SUPERSEDE older ones without deleting them, so historical claims remain reviewable against the policy that was in effect at the time.",
       "required": [
         "policy_id",
         "policy_name",
@@ -107,22 +111,25 @@
             "payment_terms",
             "data_security",
             "ip_infringement",
+            "remedies",
             "governance",
             "other"
           ]
         },
-        "version": { "type": "string" },
+        "version": { "type": "string", "minLength": 1 },
         "rule_text": { "type": "string" },
         "risk_tolerance": {
           "type": "string",
           "enum": ["low", "medium", "high"]
         },
         "owner": { "type": "string" },
-        "effective_date": { "type": "string", "format": "date" }
+        "effective_date": { "type": "string", "format": "date" },
+        "supersedes_policy_id": { "type": ["string", "null"] }
       }
     },
     "Claim": {
       "type": "object",
+      "description": "A Claim is an AI-proposed semantic interpretation. It is not authoritative. It must be grounded in a SourceSpan via GROUNDED_IN and linked to the ModelRun that produced it via EXTRACTED_BY.",
       "required": [
         "claim_id",
         "claim_text",
@@ -163,6 +170,7 @@
     },
     "RiskFinding": {
       "type": "object",
+      "description": "A RiskFinding is a reviewable issue built from one or more Claims. A RiskFinding is not a legal decision; it is a proposal awaiting counsel review.",
       "required": [
         "finding_id",
         "finding_type",
@@ -181,6 +189,7 @@
             "liability_cap_carveout_breach",
             "payment_terms_out_of_policy",
             "remedy_restriction",
+            "exclusive_remedy_conflict",
             "data_security_obligation_gap",
             "ip_obligation_gap",
             "other"
@@ -190,7 +199,7 @@
           "type": "string",
           "enum": ["low", "medium", "high", "critical"]
         },
-        "finding_summary": { "type": "string" },
+        "finding_summary": { "type": "string", "minLength": 1 },
         "proposed_status": {
           "type": "string",
           "enum": ["proposed", "approved_concession", "rejected", "escalated"]
@@ -205,6 +214,7 @@
     },
     "ReviewDecision": {
       "type": "object",
+      "description": "A ReviewDecision is a human authority record. ReviewDecisions are immutable: a later decision is created as a new node and linked via SUPERSEDES to the prior one. Decisions are never overwritten.",
       "required": [
         "decision_id",
         "decision",
@@ -231,6 +241,7 @@
     },
     "Expert": {
       "type": "object",
+      "description": "An Expert is a reviewing lawyer or compliance reviewer. Experts are linked to ReviewDecisions via MADE_BY and carry an authority level.",
       "required": [
         "expert_id",
         "name",
@@ -248,6 +259,7 @@
     },
     "ModelRun": {
       "type": "object",
+      "description": "A ModelRun is the AI provenance object. It records which model, version, prompt, and mode produced the Claims, so the institutional record remains coherent across model upgrades.",
       "required": [
         "model_run_id",
         "model_name",
@@ -260,7 +272,7 @@
         "model_run_id": { "type": "string" },
         "model_name": { "type": "string" },
         "model_version": { "type": "string" },
-        "prompt_version": { "type": "string" },
+        "prompt_version": { "type": "string", "minLength": 1 },
         "run_timestamp": { "type": "string", "format": "date-time" },
         "extraction_mode": {
           "type": "string",
@@ -270,6 +282,7 @@
     },
     "ExpectedFinding": {
       "type": "object",
+      "description": "A serialized expected finding used by the deterministic reference pipeline. Mirrors the Claim + RiskFinding pair, plus the policy/clause relationships, for one extracted issue.",
       "required": [
         "finding_id",
         "claim_id",
@@ -295,7 +308,7 @@
           "type": "string",
           "enum": ["low", "medium", "high", "critical"]
         },
-        "explanation": { "type": "string" },
+        "explanation": { "type": "string", "minLength": 1 },
         "reportable": { "type": "boolean" },
         "clause_id": { "type": ["string", "null"] },
         "relationship_to_policy": {
@@ -324,12 +337,12 @@
     "GROUNDED_IN": {
       "from": "Claim",
       "to": "SourceSpan",
-      "description": "A claim must be grounded in addressable source text."
+      "description": "A claim must be grounded in addressable source text. Without GROUNDED_IN, a claim is groundless and the evaluator flags it."
     },
     "EXTRACTED_BY": {
       "from": "Claim",
       "to": "ModelRun",
-      "description": "Every claim records which model run proposed it."
+      "description": "Every claim records which model run proposed it. EXTRACTED_BY is the AI provenance edge."
     },
     "BASED_ON": {
       "from": "RiskFinding",
@@ -344,7 +357,7 @@
     "TENSIONS_WITH": {
       "from": "Claim",
       "to": "Policy",
-      "description": "A claim is in tension with a baseline policy."
+      "description": "A claim is in tension with a baseline policy. TENSIONS_WITH is the structured form of disagreement; it is queryable independently of any single finding."
     },
     "COMPLIES_WITH": {
       "from": "Claim",
@@ -374,12 +387,12 @@
     "SUPERSEDES_DECISION": {
       "from": "ReviewDecision",
       "to": "ReviewDecision",
-      "description": "A later decision supersedes an earlier decision, non-destructively."
+      "description": "A later decision supersedes an earlier decision, non-destructively. The earlier decision is preserved in the graph."
     },
     "SUPERSEDES_POLICY": {
       "from": "Policy",
       "to": "Policy",
-      "description": "A policy supersedes a prior version, non-destructively."
+      "description": "A policy supersedes a prior version, non-destructively. Historical claims remain linked to the policy version in effect at the time of review."
     }
   },
   "validation_rules": [
@@ -389,6 +402,7 @@
     "ReviewDecision nodes MUST never be deleted; later decisions create SUPERSEDES edges.",
     "Policy upgrades MUST never be deleted; later versions create SUPERSEDES edges.",
     "Claim status transitions are constrained to: proposed -> superseded, proposed -> withdrawn.",
-    "RiskFinding.proposed_status reflects the most recent linked ReviewDecision.decision; the underlying finding text is immutable."
+    "RiskFinding.proposed_status reflects the most recent linked ReviewDecision.decision; the underlying finding text is immutable.",
+    "Each RiskFinding has at most one current (non-superseded) ReviewDecision."
   ]
 }

@@ -5,12 +5,20 @@ This module does NOT call any external LLM API. It loads the deterministic
 corresponding Claim and RiskFinding nodes (with their provenance edges) into
 the graph.
 
+By default, the primary run is used. Pass `--findings sample-data/expected_findings_v2.json`
+together with `--model-run sample-data/model_run_v2.json` to layer a second
+run on top of the first, demonstrating that the graph preserves both
+interpretations rather than overwriting earlier claims.
+
 Usage:
     python -m src.review
+    python -m src.review --findings sample-data/expected_findings_v2.json \\
+        --model-run sample-data/model_run_v2.json
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -50,11 +58,18 @@ def build_finding(finding: dict, created_at: str) -> dict:
     }
 
 
-def run_review(session: Any) -> tuple[int, int]:
-    expected = load_json(SAMPLE_DATA_DIR / "expected_findings.json")
-    model_run = load_json(SAMPLE_DATA_DIR / "model_run.json")
-    created_at = model_run["run_timestamp"]
+def run_review(
+    session: Any,
+    findings_path: Path,
+    model_run_path: Path,
+) -> tuple[int, int]:
+    expected = load_json(findings_path)
+    model_run = load_json(model_run_path)
 
+    # Ensure the model run node exists for this set of claims.
+    db.upsert_model_run(session, model_run)
+
+    created_at = model_run["run_timestamp"]
     claim_count = 0
     finding_count = 0
 
@@ -63,17 +78,14 @@ def run_review(session: Any) -> tuple[int, int]:
         db.upsert_claim(session, claim)
         claim_count += 1
 
-        # Claim -> Clause asserts and amendments
         if f.get("clause_id"):
             db.link_claim_asserts_clause(session, f["claim_id"], f["clause_id"])
         if f.get("amends_clause_id"):
             db.link_claim_amends_clause(session, f["claim_id"], f["amends_clause_id"])
 
-        # Claim -> Policy
         relationship = f.get("relationship_to_policy", "TENSIONS_WITH")
         db.link_claim_to_policy(session, f["claim_id"], f["policy_id"], relationship)
 
-        # Finding
         finding_node = build_finding(f, created_at)
         db.upsert_finding(session, finding_node, claim_ids=[f["claim_id"]])
         finding_count += 1
@@ -81,13 +93,35 @@ def run_review(session: Any) -> tuple[int, int]:
     return claim_count, finding_count
 
 
-def main() -> int:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Apply the deterministic stubbed extraction.")
+    parser.add_argument(
+        "--findings",
+        default=str(SAMPLE_DATA_DIR / "expected_findings.json"),
+        help="Path to the expected findings JSON file.",
+    )
+    parser.add_argument(
+        "--model-run",
+        default=str(SAMPLE_DATA_DIR / "model_run.json"),
+        help="Path to the model run JSON file.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    findings_path = Path(args.findings)
+    model_run_path = Path(args.model_run)
+
     print("=" * 70)
     print("HITL GraphRAG Reference Model :: Review (Stubbed Extraction)")
     print("=" * 70)
+    print(f"findings:  {findings_path}")
+    print(f"model run: {model_run_path}")
+
     try:
         with db.session_scope() as session:
-            claims, findings = run_review(session)
+            claims, findings = run_review(session, findings_path, model_run_path)
         print(f"Created {claims} claim(s) and {findings} risk finding(s).")
         print("AI proposes; counsel disposes. Use src.curate to record review decisions.")
         return 0

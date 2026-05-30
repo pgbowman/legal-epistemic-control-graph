@@ -141,8 +141,26 @@ def upsert_policy(session: Any, policy: dict) -> None:
             p.owner = $owner,
             p.effective_date = $effective_date
         """,
-        **policy,
+        policy_id=policy["policy_id"],
+        policy_name=policy["policy_name"],
+        policy_type=policy["policy_type"],
+        version=policy["version"],
+        rule_text=policy["rule_text"],
+        risk_tolerance=policy["risk_tolerance"],
+        owner=policy["owner"],
+        effective_date=policy["effective_date"],
     )
+    prior = policy.get("supersedes_policy_id")
+    if prior:
+        session.run(
+            """
+            MATCH (newer:Policy {policy_id: $newer})
+            MATCH (older:Policy {policy_id: $older})
+            MERGE (newer)-[:SUPERSEDES]->(older)
+            """,
+            newer=policy["policy_id"],
+            older=prior,
+        )
 
 
 def upsert_expert(session: Any, expert: dict) -> None:
@@ -350,6 +368,106 @@ def read_reportable_findings(session: Any) -> list[dict]:
         """
     )
     return [dict(r) for r in result]
+
+
+def count_nodes(session: Any, label: str) -> int:
+    if label not in (
+        "Document",
+        "SourceSpan",
+        "Clause",
+        "Policy",
+        "Claim",
+        "RiskFinding",
+        "ReviewDecision",
+        "Expert",
+        "ModelRun",
+    ):
+        raise ValueError(f"Unsupported node label: {label}")
+    result = session.run(f"MATCH (n:{label}) RETURN count(n) AS c")
+    record = result.single()
+    return int(record["c"]) if record else 0
+
+
+def read_claims_with_violations(session: Any) -> list[dict]:
+    """Return claims whose status or confidence violate schema constraints."""
+    result = session.run(
+        """
+        MATCH (c:Claim)
+        WHERE NOT c.status IN ['proposed', 'superseded', 'withdrawn']
+           OR c.confidence < 0.0
+           OR c.confidence > 1.0
+        RETURN c.claim_id AS claim_id, c.status AS status, c.confidence AS confidence
+        """
+    )
+    return [dict(r) for r in result]
+
+
+def read_spans_with_empty_hash(session: Any) -> list[str]:
+    result = session.run(
+        """
+        MATCH (s:SourceSpan)
+        WHERE s.text_hash IS NULL OR s.text_hash = ''
+        RETURN s.span_id AS span_id
+        """
+    )
+    return [r["span_id"] for r in result]
+
+
+def read_policies_missing_version(session: Any) -> list[str]:
+    result = session.run(
+        """
+        MATCH (p:Policy)
+        WHERE p.version IS NULL OR p.version = ''
+        RETURN p.policy_id AS policy_id
+        """
+    )
+    return [r["policy_id"] for r in result]
+
+
+def read_model_runs_missing_prompt(session: Any) -> list[str]:
+    result = session.run(
+        """
+        MATCH (m:ModelRun)
+        WHERE m.prompt_version IS NULL OR m.prompt_version = ''
+        RETURN m.model_run_id AS model_run_id
+        """
+    )
+    return [r["model_run_id"] for r in result]
+
+
+def read_invalid_review_decisions(session: Any) -> list[dict]:
+    result = session.run(
+        """
+        MATCH (d:ReviewDecision)
+        WHERE NOT d.decision IN ['approved_concession', 'rejected', 'escalated']
+        RETURN d.decision_id AS decision_id, d.decision AS decision
+        """
+    )
+    return [dict(r) for r in result]
+
+
+def read_findings_with_multiple_current_decisions(session: Any) -> list[dict]:
+    result = session.run(
+        """
+        MATCH (f:RiskFinding)<-[:REVIEWS]-(d:ReviewDecision)
+        WHERE NOT EXISTS { MATCH (newer:ReviewDecision)-[:SUPERSEDES]->(d) }
+        WITH f, count(d) AS current_count
+        WHERE current_count > 1
+        RETURN f.finding_id AS finding_id, current_count
+        """
+    )
+    return [dict(r) for r in result]
+
+
+def read_findings_missing_status(session: Any) -> list[str]:
+    result = session.run(
+        """
+        MATCH (f:RiskFinding {reportable: true})
+        WHERE f.proposed_status IS NULL OR f.proposed_status = ''
+        RETURN f.finding_id AS finding_id
+        """
+    )
+    return [r["finding_id"] for r in result]
 
 
 def read_model_run_provenance(session: Any, model_run_id: str) -> list[dict]:

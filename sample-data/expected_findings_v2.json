@@ -1,0 +1,38 @@
+{
+  "model_run_id": "RUN-2026-06-02-002",
+  "notes": "Second model run over the same vendor draft. Same source spans, slightly revised claim wording, one new claim that the earlier run missed. The earlier run's claims remain in the graph; nothing is overwritten.",
+  "findings": [
+    {
+      "finding_id": "FINDING-101",
+      "claim_id": "CLAIM-101",
+      "model_run_id": "RUN-2026-06-02-002",
+      "span_id": "SPAN-VEN-INDEM-001",
+      "policy_id": "POL-INDEM-001",
+      "clause_id": "CLAUSE-VEN-INDEM-001",
+      "claim_text": "Indemnification has been reduced to mutual and only covers finally adjudicated gross negligence or willful misconduct, eliminating breach, ordinary negligence, data security, and IP infringement coverage.",
+      "claim_type": "policy_tension",
+      "finding_type": "indemnification_narrowed",
+      "severity": "high",
+      "explanation": "Second run, revised wording. Same source span as FINDING-001; both claims coexist in the graph for audit comparison across model runs.",
+      "reportable": true,
+      "relationship_to_policy": "TENSIONS_WITH",
+      "amends_clause_id": "CLAUSE-BASE-INDEM-001"
+    },
+    {
+      "finding_id": "FINDING-102",
+      "claim_id": "CLAIM-102",
+      "model_run_id": "RUN-2026-06-02-002",
+      "span_id": "SPAN-VEN-INDEM-001",
+      "policy_id": "POL-IP-001",
+      "clause_id": "CLAUSE-VEN-INDEM-001",
+      "claim_text": "The vendor's narrowed indemnification also eliminates IP infringement indemnity, which POL-IP-001 prohibits.",
+      "claim_type": "policy_tension",
+      "finding_type": "ip_obligation_gap",
+      "severity": "high",
+      "explanation": "New claim that the earlier model run did not surface. Same source span, different policy; demonstrates that re-running a newer model adds claims without rewriting the prior interpretation.",
+      "reportable": true,
+      "relationship_to_policy": "TENSIONS_WITH",
+      "amends_clause_id": null
+    }
+  ]
+}

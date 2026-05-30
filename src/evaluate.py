@@ -1,17 +1,35 @@
-"""Evaluate model integrity.
+"""Evaluate the integrity of the reference graph.
 
-For every reportable RiskFinding in the graph, check that it has:
+This is the governance check. It enforces the architectural invariants the
+schema and ontology describe, but at the level of the live graph rather than
+the JSON sample data. The static schema is checked separately by `src.validate`.
 
-* at least one Claim (via BASED_ON)
-* at least one SourceSpan (via Claim -> GROUNDED_IN)
-* at least one Policy (via Claim -> TENSIONS_WITH | COMPLIES_WITH | CREATES_LIABILITY_UNDER)
-* at least one ModelRun (via Claim -> EXTRACTED_BY)
-* a proposed_status value
-* reportable == true
+Checks performed:
 
-Also checks that no ReviewDecision has been destructively overwritten: every
-non-terminal decision should be SUPERSEDED by exactly one successor (or zero,
-if it is the current decision).
+  Provenance
+    * every reportable RiskFinding has at least one Claim
+    * every reportable RiskFinding has at least one SourceSpan (via Claim)
+    * every reportable RiskFinding has at least one Policy (via Claim)
+    * every reportable RiskFinding has at least one ModelRun (via Claim)
+    * every reportable RiskFinding has a proposed_status and reportable == true
+
+  Claim integrity
+    * every Claim's status is one of: proposed, superseded, withdrawn
+    * every Claim's confidence is between 0.0 and 1.0
+
+  Evidence integrity
+    * every SourceSpan has a non-empty text_hash
+
+  Policy integrity
+    * every Policy has a non-empty version
+
+  Model provenance
+    * every ModelRun has a non-empty prompt_version
+
+  Human review
+    * every ReviewDecision has a valid decision enum value
+    * every RiskFinding has at most one current (non-superseded) ReviewDecision
+    * no orphan decision chains
 
 Usage:
     python -m src.evaluate
@@ -49,10 +67,8 @@ def evaluate_findings(session: Any) -> tuple[list[str], list[str]]:
 
 
 def evaluate_decision_chains(session: Any) -> list[str]:
-    """Detect destructive overwrites of review decisions.
-
-    A destructive overwrite would manifest as multiple ReviewDecision nodes
-    pointing to the same finding without a SUPERSEDES chain connecting them.
+    """Detect orphan decisions: multiple decisions on the same finding that
+    are not linked by SUPERSEDES.
     """
     result = session.run(
         """
@@ -66,11 +82,13 @@ def evaluate_decision_chains(session: Any) -> list[str]:
         RETURN f.finding_id AS finding_id, d.decision_id AS orphan_decision_id
         """
     )
-    issues = [
-        f"finding {r['finding_id']}: orphan decision {r['orphan_decision_id']}"
-        for r in result
-    ]
-    return issues
+    return [f"finding {r['finding_id']}: orphan decision {r['orphan_decision_id']}" for r in result]
+
+
+def _header(title: str) -> None:
+    print()
+    print(title)
+    print("-" * len(title))
 
 
 def main() -> int:
@@ -80,26 +98,83 @@ def main() -> int:
 
     try:
         with db.session_scope() as session:
-            passes, failures = evaluate_findings(session)
-            decision_issues = evaluate_decision_chains(session)
+            finding_passes, finding_failures = evaluate_findings(session)
+            claim_violations = db.read_claims_with_violations(session)
+            empty_hash_spans = db.read_spans_with_empty_hash(session)
+            unversioned_policies = db.read_policies_missing_version(session)
+            unprompted_runs = db.read_model_runs_missing_prompt(session)
+            bad_decisions = db.read_invalid_review_decisions(session)
+            multi_current = db.read_findings_with_multiple_current_decisions(session)
+            missing_status = db.read_findings_missing_status(session)
+            decision_orphans = evaluate_decision_chains(session)
+
+            counts = {
+                "findings": db.count_nodes(session, "RiskFinding"),
+                "claims": db.count_nodes(session, "Claim"),
+                "source_spans": db.count_nodes(session, "SourceSpan"),
+                "policies": db.count_nodes(session, "Policy"),
+                "model_runs": db.count_nodes(session, "ModelRun"),
+                "review_decisions": db.count_nodes(session, "ReviewDecision"),
+            }
     except Exception as exc:  # noqa: BLE001
         print(f"Evaluation failed: {exc}", file=sys.stderr)
         return 1
 
-    print(f"Reportable findings checked: {len(passes) + len(failures)}")
-    for p in passes:
-        print(f"  PASS  {p}")
-    for f in failures:
-        print(f"  FAIL  {f}")
+    _header("Integrity Evaluation")
+    print(f"Findings checked:         {counts['findings']}")
+    print(f"Claims checked:           {counts['claims']}")
+    print(f"Source spans checked:     {counts['source_spans']}")
+    print(f"Policies checked:         {counts['policies']}")
+    print(f"Model runs checked:       {counts['model_runs']}")
+    print(f"Review decisions checked: {counts['review_decisions']}")
     print()
-    print(f"Review decision chain issues: {len(decision_issues)}")
-    for issue in decision_issues:
-        print(f"  FAIL  {issue}")
 
-    overall_pass = not failures and not decision_issues
+    failures: list[str] = []
+    failures += finding_failures
+    failures += [f"claim {v['claim_id']}: invalid status/confidence ({v['status']}, {v['confidence']})" for v in claim_violations]
+    failures += [f"span {s}: empty text_hash" for s in empty_hash_spans]
+    failures += [f"policy {p}: missing version" for p in unversioned_policies]
+    failures += [f"model run {m}: missing prompt_version" for m in unprompted_runs]
+    failures += [f"decision {d['decision_id']}: invalid decision enum ({d['decision']})" for d in bad_decisions]
+    failures += [f"finding {m['finding_id']}: multiple current review decisions ({m['current_count']})" for m in multi_current]
+    failures += [f"finding {s}: missing proposed_status" for s in missing_status]
+    failures += decision_orphans
+
+    if finding_failures:
+        print("FAIL: some reportable findings have incomplete provenance")
+        for f in finding_failures:
+            print(f"  - {f}")
+    else:
+        print("PASS: all reportable findings have complete provenance")
+
+    if any(v for v in claim_violations) or empty_hash_spans:
+        print("FAIL: some claims/spans violate integrity rules")
+    else:
+        print("PASS: all claims are source-span grounded with valid status/confidence")
+
+    if unprompted_runs:
+        print("FAIL: model runs missing prompt_version")
+    else:
+        print("PASS: all model runs are recorded with prompt provenance")
+
+    if bad_decisions or multi_current or decision_orphans:
+        print("FAIL: review decision integrity violations")
+    else:
+        print("PASS: no destructive review overwrite detected")
+
+    if unversioned_policies:
+        print("FAIL: some policies missing version")
+    else:
+        print("PASS: all policies versioned")
+
     print()
-    print("OVERALL: PASS" if overall_pass else "OVERALL: FAIL")
-    return 0 if overall_pass else 1
+    print("OVERALL: " + ("PASS" if not failures else f"FAIL ({len(failures)} issue(s))"))
+    if failures:
+        print()
+        print("Issues:")
+        for f in failures:
+            print(f"  - {f}")
+    return 0 if not failures else 1
 
 
 if __name__ == "__main__":

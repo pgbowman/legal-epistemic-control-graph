@@ -4,6 +4,14 @@ This document describes the reference model in more depth than the README. It is
 
 ---
 
+## Why This Exists
+
+Many enterprise AI demos treat generation as the final artifact. In legal and compliance workflows, generation is only a proposal. The durable artifact is the review record: what source text was considered, what interpretation was proposed, what policy it tensioned with, and what an authorized human decided.
+
+This repository models that review record.
+
+---
+
 ## Core Entities
 
 The model is built around nine node labels and a constrained edge vocabulary. They are documented in [`../schema/graph_schema.md`](../schema/graph_schema.md). Here, the focus is on the **roles** these entities play, not their fields.
@@ -21,6 +29,23 @@ The model is built around nine node labels and a constrained edge vocabulary. Th
 | `ModelRun` | The AI provenance object. Parallel to `Expert`. |
 
 The graph is small on purpose. Every node label exists because removing it would collapse a distinction the architecture is built to preserve.
+
+---
+
+## Reference Model Invariants
+
+The architecture enforces several design invariants:
+
+1. A `Claim` must never exist without a `SourceSpan`.
+2. A `Claim` must never exist without a `ModelRun`.
+3. A `RiskFinding` must be based on at least one `Claim`.
+4. A `RiskFinding` is not a legal decision.
+5. A `ReviewDecision` must be a separate node.
+6. A later `ReviewDecision` supersedes an earlier one; it does not overwrite it.
+7. A `Policy` must be versioned.
+8. A reportable finding must include enough provenance for counsel to review it without trusting the model.
+
+These invariants are checked by `src/evaluate.py` and formalized in [`graph_contract.md`](./graph_contract.md). The threat model — what specific failure modes these invariants are designed to contain — is in [`failure_modes.md`](./failure_modes.md).
 
 ---
 
@@ -63,6 +88,55 @@ A `ReviewDecision` is **immutable**. To change a decision, create a new `ReviewD
 
 ---
 
+## Policy Versioning
+
+Policies are versioned. The sample data demonstrates this with two versions of the payment-terms policy:
+
+- `POL-PAY-000` (v2.0, Net-45) — superseded
+- `POL-PAY-001` (v3.1, Net-30) — current, with `SUPERSEDES` to v2.0
+
+A claim can be evaluated against the policy version in effect at the time of review. Later policy changes do not erase the historical review basis. Auditors can ask "what did the policy say at the time?" and get a deterministic answer from the graph.
+
+---
+
+## Multi-Run Audit
+
+The same `SourceSpan` can support multiple claims from different model runs. The system does not overwrite the old claim; it preserves both interpretations for auditability.
+
+The sample data ships two runs:
+
+- `RUN-2026-05-15-001` — primary run, five findings.
+- `RUN-2026-06-02-002` — second run over the same vendor draft. Re-phrases one claim and surfaces one new finding that the earlier run missed.
+
+To layer the second run on top of the first:
+
+```bash
+python -m src.review \
+  --findings sample-data/expected_findings_v2.json \
+  --model-run sample-data/model_run_v2.json
+```
+
+Nothing is overwritten. The graph now has 7 claims grounded in the same span set, attributed to two distinct model runs.
+
+---
+
+## Maturity Model
+
+The architecture sits at the upper end of a small maturity scale for AI-assisted legal review systems.
+
+| Level | Description |
+|---|---|
+| Level 0 | AI generates unstructured legal summaries |
+| Level 1 | AI outputs citations to source text |
+| Level 2 | AI claims are stored separately from source spans |
+| Level 3 | Risk findings are linked to policies and model runs |
+| Level 4 | Human review decisions are non-destructive and versioned |
+| Level 5 | Policy versions, model runs, and superseded decisions form a durable institutional memory |
+
+Most production deployments sit at Levels 0–2. This reference model is built to demonstrate Levels 3–5.
+
+---
+
 ## Graph Invariants
 
 The graph enforces these invariants. They are checked by `src/evaluate.py`.
@@ -73,6 +147,10 @@ The graph enforces these invariants. They are checked by `src/evaluate.py`.
 4. Every reportable `RiskFinding` has at least one `Policy` reachable through its claims.
 5. No `ReviewDecision` is ever deleted. Newer decisions create `SUPERSEDES` edges.
 6. No `Policy` is ever deleted. New versions create `SUPERSEDES` edges.
+7. Each `RiskFinding` has at most one current (non-superseded) `ReviewDecision`.
+8. Every `SourceSpan` has a non-empty `text_hash`.
+9. Every `Policy` has a non-empty `version`.
+10. Every `ModelRun` has a non-empty `prompt_version`.
 
 These invariants are deliberately easy to state and easy to query. They are the contract between the engineering layer and the legal review process.
 

@@ -2,25 +2,39 @@
 
 > AI proposes; counsel disposes.
 
-This repository is a small reference model for **human-in-the-loop GraphRAG** in high-stakes legal and compliance workflows. It demonstrates how LLMs can propose semantic interpretations while a graph-based curation layer preserves source provenance, review history, and human authority.
+A reference architecture for auditable semantic extraction, source-span-grounded claims, and non-destructive human review.
 
-This is **not** a demo app, a SaaS prototype, or a chatbot. It is a compact reference architecture showing how high-stakes AI systems can preserve source-grounded claims, provenance, human review authority, and model-independent curation history when LLMs are used for legal or compliance semantic extraction.
+This repository is a compact reference model for preserving provenance, review authority, and model-independent curation history in high-stakes legal/compliance AI workflows.
+
+It demonstrates a simple but important architectural separation:
+
+- the contract text is **evidence**,
+- the source span is **addressable evidence**,
+- the AI claim is a **proposed interpretation**,
+- the risk finding is a **reviewable issue**,
+- the lawyer's decision is the **authority record**.
+
+The project is intentionally not a chatbot, SaaS prototype, contract automation tool, or legal advice system. It is a reference architecture for an **epistemic control layer** around AI-assisted legal review.
+
+This system does not "solve hallucinations." It contains hallucination risk by preventing AI output from becoming authoritative without human legal review.
 
 ---
 
-## The Problem with Ordinary RAG
+## Why This Exists
 
-Ordinary RAG systems built for legal review tend to:
+Many enterprise AI demos treat generation as the final artifact. In legal and compliance workflows, generation is only a proposal. The durable artifact is the review record: what source text was considered, what interpretation was proposed, what policy it tensioned with, and what an authorized human decided.
 
-- retrieve text and generate summaries that conflate source, interpretation, and conclusion,
-- collapse the model's *proposal* and the lawyer's *decision* into a single answer,
-- lose durable review history when answers are regenerated,
-- make model upgrades hard to audit because the prior outputs disappear,
-- treat AI-generated text as if it were a durable institutional artifact.
+This repository models that review record.
 
-In high-stakes review, that is unacceptable. Counsel cannot be expected to take responsibility for an answer they cannot trace back to source text, a model version, and a prior reviewer's rationale.
+---
 
-This system does not "solve hallucinations." It **contains hallucination risk** by preventing AI output from becoming authoritative without human legal review.
+## Sample Output
+
+The pipeline generates a lawyer-facing exception report for human review.
+
+See: [`docs/assets/sample_exception_report.pdf`](docs/assets/sample_exception_report.pdf)
+
+![Exception report preview](docs/assets/exception_report_preview.png)
 
 ---
 
@@ -33,11 +47,28 @@ This architecture separates, by design, what most systems collapse:
 - **clause** (the legally meaningful unit)
 - **claim** (an AI-proposed interpretation)
 - **risk finding** (a reviewable issue)
-- **policy** (the baseline rule the finding tensions with)
+- **policy** (the baseline rule the finding tensions with, versioned)
 - **model run** (which AI produced the claim)
-- **review decision** (the human authority record)
+- **review decision** (the human authority record, non-destructive)
 
 In one sentence: the graph is an **epistemic control layer** between the contract and the exception report.
+
+---
+
+## Reference Model Invariants
+
+The architecture enforces several design invariants:
+
+1. A `Claim` must never exist without a `SourceSpan`.
+2. A `Claim` must never exist without a `ModelRun`.
+3. A `RiskFinding` must be based on at least one `Claim`.
+4. A `RiskFinding` is not a legal decision.
+5. A `ReviewDecision` must be a separate node.
+6. A later `ReviewDecision` supersedes an earlier one; it does not overwrite it.
+7. A `Policy` must be versioned.
+8. A reportable finding must include enough provenance for counsel to review it without trusting the model.
+
+These invariants are enforced by `src/evaluate.py` and codified in [`docs/graph_contract.md`](docs/graph_contract.md).
 
 ---
 
@@ -84,6 +115,8 @@ graph LR
 
 A fuller discussion is in [`docs/why_not_just_rag.md`](./docs/why_not_just_rag.md).
 
+For an explicit threat model — what kinds of model error this architecture is designed to contain — see [`docs/failure_modes.md`](./docs/failure_modes.md).
+
 ---
 
 ## Run Locally
@@ -110,7 +143,15 @@ docker run \
   neo4j:latest
 ```
 
-To record a human review decision after `review`:
+Layer a second model run over the same source spans (demonstrates non-destructive accumulation across model upgrades):
+
+```bash
+python -m src.review \
+  --findings sample-data/expected_findings_v2.json \
+  --model-run sample-data/model_run_v2.json
+```
+
+Record a human review decision:
 
 ```bash
 python -m src.curate \
@@ -132,7 +173,7 @@ Run the whole demo end-to-end (requires Neo4j):
 make demo
 ```
 
-`render_report` does **not** require Neo4j; it can regenerate the PDF directly from the sample-data files.
+`render_report` does **not** require Neo4j; it regenerates the PDF directly from the sample-data files.
 
 ---
 
@@ -149,12 +190,14 @@ make demo
 
 ---
 
-## What This Demonstrates
+## What This Demonstrates (Concretely)
 
 - Source-span-grounded semantic extraction.
 - Model-independent review history.
 - Durable human curation.
 - Policy tension tracking as first-class graph relationships.
+- Policy versioning (one historical payment-terms policy is preserved and superseded).
+- Multi-run audit (a second deterministic model run is provided to show non-destructive accumulation).
 - Exception reporting for counsel.
 - Audit-friendly AI workflow design.
 - Separation of evidence, interpretation, finding, and decision.
@@ -168,7 +211,8 @@ The sample data is **synthetic and CUAD-inspired**. It is hand-crafted to exerci
 - vendor narrows broad indemnity to mutual / finally-adjudicated indemnity,
 - vendor caps indemnification, confidentiality, data-security, and IP infringement liabilities,
 - vendor changes payment terms from Net-30 to Net-90,
-- vendor designates "sole and exclusive" remedies.
+- vendor designates "sole and exclusive" remedies,
+- vendor's exclusive-remedy language conflicts with the company's equitable-remedies policy.
 
 No third-party contract text is redistributed. No Enron or CUAD source documents are committed to this repository.
 
@@ -200,10 +244,17 @@ A future optional adapter under `examples/cuad_adapter/` could map CUAD annotati
 ├── .env.example
 ├── Makefile
 ├── schema/                # JSON and human-readable schema, plus ontology
-├── sample-data/           # synthetic baseline, policy, vendor draft, model run, findings
+├── sample-data/           # synthetic baseline, policy, vendor draft, model runs, findings
 ├── src/                   # config, db, validate, ingest, review, curate, evaluate, render_report
-├── reports/               # generated PDF lands here
-├── docs/                  # reference model, "why not RAG", architecture diagram, report notes
+├── reports/               # generated PDF lands here (gitignored)
+├── docs/
+│   ├── reference_model.md     # entities, lifecycle, invariants, maturity model
+│   ├── graph_contract.md      # guarantees the curation graph upholds
+│   ├── why_not_just_rag.md
+│   ├── failure_modes.md       # the threat model
+│   ├── architecture.mmd
+│   ├── sample_exception_report_notes.md
+│   └── assets/                # committed sample PDF and preview PNG
 └── tests/                 # pytest suite
 ```
 

@@ -70,5 +70,17 @@ def test_findings_cover_required_categories(expected_findings: list[dict]) -> No
         "indemnification_narrowed",
         "liability_cap_carveout_breach",
         "payment_terms_out_of_policy",
+        "exclusive_remedy_conflict",
     }
     assert required.issubset(types), f"missing required finding types: {required - types}"
+
+
+def test_multiple_claims_can_share_a_source_span(expected_findings: list[dict]) -> None:
+    """Two findings should tension different policies against the same vendor remedy span,
+    demonstrating that the architecture supports many-to-one Claim->SourceSpan.
+    """
+    span_to_claims: dict[str, list[str]] = {}
+    for f in expected_findings:
+        span_to_claims.setdefault(f["span_id"], []).append(f["claim_id"])
+    shared = {sid: cids for sid, cids in span_to_claims.items() if len(cids) > 1}
+    assert shared, "expected at least one span supporting multiple claims"

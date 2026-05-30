@@ -1,0 +1,9 @@
+{
+  "model_run_id": "RUN-2026-06-02-002",
+  "model_name": "stubbed-llm",
+  "model_version": "v0.2-reference",
+  "prompt_version": "prompt-contract-risk-002",
+  "run_timestamp": "2026-06-02T10:30:00Z",
+  "extraction_mode": "stubbed",
+  "notes": "Second deterministic run over the same vendor draft. Demonstrates that the graph preserves both interpretations rather than overwriting the earlier one. No external LLM API was called."
+}

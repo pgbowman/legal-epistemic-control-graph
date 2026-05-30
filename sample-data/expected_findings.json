@@ -44,7 +44,7 @@
       "claim_type": "policy_tension",
       "finding_type": "payment_terms_out_of_policy",
       "severity": "medium",
-      "explanation": "POL-PAY-001 requires Net-30 with Procurement approval needed for Net-60 and CFO approval for Net-90+. The vendor's Net-90 from invoice date requires CFO sign-off.",
+      "explanation": "POL-PAY-001 (current, v3.1) requires Net-30 with Procurement approval needed for Net-60 and CFO approval for Net-90+. The vendor's Net-90 from invoice date requires CFO sign-off. (Prior version POL-PAY-000 allowed Net-45 and is preserved in the graph.)",
       "reportable": true,
       "relationship_to_policy": "TENSIONS_WITH",
       "amends_clause_id": "CLAUSE-BASE-PAY-001"
@@ -61,6 +61,22 @@
       "finding_type": "remedy_restriction",
       "severity": "medium",
       "explanation": "POL-REMEDY-001 prohibits 'sole and exclusive' remedy designations for Company. The vendor draft directly violates this requirement.",
+      "reportable": true,
+      "relationship_to_policy": "TENSIONS_WITH",
+      "amends_clause_id": null
+    },
+    {
+      "finding_id": "FINDING-005",
+      "claim_id": "CLAIM-005",
+      "model_run_id": "RUN-2026-05-15-001",
+      "span_id": "SPAN-VEN-REM-001",
+      "policy_id": "POL-EQUITY-001",
+      "clause_id": "CLAUSE-VEN-REM-001",
+      "claim_text": "The vendor's 'sole and exclusive remedy' clause may foreclose injunctive relief and other equitable remedies that Company would otherwise rely on to enjoin ongoing breaches of confidentiality, data security, or IP obligations.",
+      "claim_type": "policy_tension",
+      "finding_type": "exclusive_remedy_conflict",
+      "severity": "medium",
+      "explanation": "The vendor draft limits remedies to those expressly stated in the agreement. This may conflict with the company policy requiring preservation of equitable remedies for confidentiality, data security, and IP misuse.",
       "reportable": true,
       "relationship_to_policy": "TENSIONS_WITH",
       "amends_clause_id": null

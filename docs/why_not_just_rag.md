@@ -86,6 +86,20 @@ The argument here is narrower: when the AI is being used to produce **interpreta
 
 ## What an "Epistemic Control Graph" Adds
 
+Ordinary RAG is optimized for **answer generation**. This reference model is optimized for **accountable interpretation**.
+
+The key difference is not that this system uses a graph. The key difference is that the graph records the institutional status of each assertion:
+
+- evidence,
+- proposed interpretation,
+- reviewable risk,
+- human decision,
+- superseded decision,
+- policy version,
+- model run.
+
+A vector database can retrieve passages. It cannot, by itself, represent institutional authority.
+
 To put it in one sentence:
 
 > The graph preserves the difference between evidence, interpretation, risk, and authority — across time, across model versions, and across human reviewers.

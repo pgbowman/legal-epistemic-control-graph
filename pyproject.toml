@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
-    { name = "HITL GraphRAG Reference Model" }
+    { name = "Peyton Bowman" }
 ]
 keywords = [
     "graphrag",
@@ -44,8 +44,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/hitl-graphrag-legal-reference-model"
-Documentation = "https://github.com/your-org/hitl-graphrag-legal-reference-model#readme"
+Homepage = "https://github.com/pgbowman/hitl-graphrag-legal-reference-model"
+Documentation = "https://github.com/pgbowman/hitl-graphrag-legal-reference-model#readme"
 
 [tool.setuptools.packages.find]
 where = ["."]

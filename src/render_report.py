@@ -1,9 +1,11 @@
 """Render a conservative exception report PDF.
 
-Reads from the local Neo4j graph if available, otherwise falls back to the
-sample-data files so the PDF can be regenerated without a database.
+Reads from the local sample-data files so the PDF can be regenerated without
+a database. Output: reports/exception_report.pdf
 
-Output: reports/exception_report.pdf
+The report is intentionally conservative in style: black on white, narrow
+margins, two type weights, no charts. It is a working legal artifact, not a
+marketing document.
 
 Usage:
     python -m src.render_report
@@ -13,6 +15,7 @@ from __future__ import annotations
 
 import json
 import sys
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -26,6 +29,17 @@ FOOTER_TEXT = (
     "Review artifact only. Not legal advice. "
     "AI-proposed findings require counsel review."
 )
+
+POLICY_AREA_LABELS = {
+    "indemnification": "Indemnification",
+    "limitation_of_liability": "Limitation of Liability",
+    "payment_terms": "Payment Terms",
+    "data_security": "Data Security",
+    "ip_infringement": "IP Infringement",
+    "remedies": "Remedies",
+    "governance": "Governance",
+    "other": "Other",
+}
 
 
 def load_json(path: Path) -> Any:
@@ -48,6 +62,8 @@ def gather_data_from_files() -> dict:
 
     findings = []
     for f in expected["findings"]:
+        span = spans_by_id.get(f["span_id"], {})
+        pol = policies_by_id.get(f["policy_id"], {})
         findings.append(
             {
                 "finding_id": f["finding_id"],
@@ -57,8 +73,11 @@ def gather_data_from_files() -> dict:
                 "severity": f["severity"],
                 "explanation": f["explanation"],
                 "reportable": f["reportable"],
-                "span": spans_by_id.get(f["span_id"], {}),
-                "policy": policies_by_id.get(f["policy_id"], {}),
+                "review_status": "Pending counsel review",
+                "policy_area": POLICY_AREA_LABELS.get(pol.get("policy_type", "other"), "Other"),
+                "source_section": span.get("section_label", ""),
+                "span": span,
+                "policy": pol,
                 "clause": clauses_by_id.get(f.get("clause_id") or "", {}),
             }
         )
@@ -77,7 +96,7 @@ class ExceptionReportPDF(FPDF):
         if self.page_no() == 1:
             return
         self.set_font("Helvetica", "I", 8)
-        self.set_text_color(100, 100, 100)
+        self.set_text_color(110, 110, 110)
         self.cell(0, 8, "HITL GraphRAG Exception Report", align="L")
         self.cell(0, 8, f"Page {self.page_no()}", align="R", new_x="LMARGIN", new_y="NEXT")
         self.set_text_color(0, 0, 0)
@@ -86,7 +105,7 @@ class ExceptionReportPDF(FPDF):
     def footer(self) -> None:
         self.set_y(-15)
         self.set_font("Helvetica", "I", 8)
-        self.set_text_color(120, 120, 120)
+        self.set_text_color(130, 130, 130)
         self.cell(0, 10, FOOTER_TEXT, align="C")
         self.set_text_color(0, 0, 0)
 
@@ -121,21 +140,32 @@ def _kv(pdf: ExceptionReportPDF, key: str, value: str) -> None:
     pdf.multi_cell(0, 6, value, new_x="LMARGIN", new_y="NEXT")
 
 
+def _rule(pdf: ExceptionReportPDF, y_offset: float = 1.0) -> None:
+    pdf.ln(y_offset)
+    pdf.set_draw_color(180, 180, 180)
+    y = pdf.get_y()
+    pdf.line(pdf.l_margin, y, pdf.w - pdf.r_margin, y)
+    pdf.set_draw_color(0, 0, 0)
+    pdf.ln(y_offset + 1)
+
+
 def render_title_page(pdf: ExceptionReportPDF, data: dict) -> None:
     pdf.add_page()
-    pdf.ln(40)
+    pdf.ln(35)
     pdf.set_font("Helvetica", "B", 22)
     pdf.cell(0, 12, "Contract Exception Report", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(2)
+    pdf.ln(1)
     pdf.set_font("Helvetica", "", 12)
     pdf.cell(0, 8, "AI-Proposed Findings for Counsel Review", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(20)
+    pdf.ln(22)
 
     pdf.set_font("Helvetica", "", 11)
     pdf.cell(0, 7, f"Contract: {data['vendor_document']['title']}", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 7, f"Baseline: {data['baseline_document']['title']}", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 7, f"Policy version: {data['policy_document']['version']}", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(20)
+    pdf.cell(0, 7, f"Baseline policy version: {data['policy_document']['version']}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 7, f"Model run: {data['model_run']['model_run_id']}", align="C", new_x="LMARGIN", new_y="NEXT")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    pdf.cell(0, 7, f"Generated: {today}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(22)
 
     pdf.set_font("Helvetica", "I", 10)
     pdf.set_text_color(80, 80, 80)
@@ -148,44 +178,57 @@ def render_title_page(pdf: ExceptionReportPDF, data: dict) -> None:
         align="C",
     )
     pdf.set_text_color(0, 0, 0)
-    pdf.ln(15)
-
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 6, f"Generated: {today}", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(
-        0, 6, f"Model run: {data['model_run']['model_run_id']}", align="C",
-        new_x="LMARGIN", new_y="NEXT"
-    )
+    pdf.ln(8)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(0, 6, "Review artifact only - not legal advice", align="C", new_x="LMARGIN", new_y="NEXT")
 
 
 def render_executive_summary(pdf: ExceptionReportPDF, data: dict) -> None:
     pdf.add_page()
     _h1(pdf, "Executive Summary")
+
     findings = [f for f in data["findings"] if f["reportable"]]
-    sev_counts: dict[str, int] = {}
-    for f in findings:
-        sev_counts[f["severity"]] = sev_counts.get(f["severity"], 0) + 1
-    summary = (
+    sev = Counter(f["severity"] for f in findings)
+    reviewed = sum(1 for f in findings if f["review_status"].lower().startswith("reviewed"))
+    pending = len(findings) - reviewed
+
+    _para(
+        pdf,
         f"This report contains {len(findings)} AI-proposed risk finding(s) "
-        f"requiring counsel review on the vendor draft contract."
+        "requiring counsel review on the vendor draft contract. Each finding is "
+        "grounded in a specific source span and tensions with a specific policy.",
     )
-    _para(pdf, summary)
-    _h3(pdf, "Severity breakdown")
-    for sev in ("critical", "high", "medium", "low"):
-        count = sev_counts.get(sev, 0)
-        if count:
-            _para(pdf, f"  {sev.capitalize()}: {count}")
-    pdf.ln(2)
+
+    _h3(pdf, "Summary")
+    # Compact summary table
+    pdf.set_font("Helvetica", "", 10)
+    rows = [
+        ("Total findings", str(len(findings))),
+        ("Critical severity", str(sev.get("critical", 0))),
+        ("High severity", str(sev.get("high", 0))),
+        ("Medium severity", str(sev.get("medium", 0))),
+        ("Low severity", str(sev.get("low", 0))),
+        ("Reviewed", str(reviewed)),
+        ("Pending counsel review", str(pending)),
+    ]
+    label_w, value_w = 75, 30
+    pdf.set_draw_color(160, 160, 160)
+    for label, value in rows:
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(label_w, 7, label, border=1)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.cell(value_w, 7, value, border=1, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_draw_color(0, 0, 0)
+    pdf.ln(3)
+
     _h3(pdf, "Reviewer instructions")
     _para(
         pdf,
         "Each finding below is grounded in a specific source span and a specific "
-        "policy. AI-proposed claims and findings have no authority until a "
-        "reviewer records a decision. Use the checklist on each finding page "
-        "to record your decision. Decisions are non-destructive: a later "
-        "decision creates a new record and supersedes the prior one without "
-        "deleting it.",
+        "policy. AI-proposed claims and findings have no authority until a reviewer "
+        "records a decision. Use the counsel review box on each detail page to "
+        "record your decision. Decisions are non-destructive: a later decision "
+        "creates a new record and supersedes the prior one without deleting it.",
     )
 
 
@@ -199,7 +242,7 @@ def render_metadata(pdf: ExceptionReportPDF, data: dict) -> None:
     _kv(pdf, "Version", v["version"])
     _kv(pdf, "Effective date", v["effective_date"])
     _kv(pdf, "Source system", v["source_system"])
-    pdf.ln(3)
+    pdf.ln(2)
 
     _h2(pdf, "Baseline Template")
     b = data["baseline_document"]
@@ -207,7 +250,7 @@ def render_metadata(pdf: ExceptionReportPDF, data: dict) -> None:
     _kv(pdf, "Title", b["title"])
     _kv(pdf, "Version", b["version"])
     _kv(pdf, "Effective date", b["effective_date"])
-    pdf.ln(3)
+    pdf.ln(2)
 
     _h2(pdf, "Company Policy")
     p = data["policy_document"]
@@ -215,7 +258,7 @@ def render_metadata(pdf: ExceptionReportPDF, data: dict) -> None:
     _kv(pdf, "Title", p["title"])
     _kv(pdf, "Version", p["version"])
     _kv(pdf, "Effective date", p["effective_date"])
-    pdf.ln(3)
+    pdf.ln(2)
 
     _h2(pdf, "Model Run")
     m = data["model_run"]
@@ -230,26 +273,79 @@ def render_metadata(pdf: ExceptionReportPDF, data: dict) -> None:
 def render_exception_table(pdf: ExceptionReportPDF, data: dict) -> None:
     pdf.add_page()
     _h1(pdf, "Exception Table")
+
     pdf.set_font("Helvetica", "B", 9)
-    widths = [22, 48, 20, 84]
-    headers = ["Finding", "Type", "Severity", "Summary"]
+    pdf.set_draw_color(150, 150, 150)
+    # widths sum to 174 (page width 210 minus 18+18 margins)
+    widths = [24, 22, 36, 50, 42]
+    headers = ["Finding ID", "Severity", "Policy Area", "Source Section", "Review Status"]
+    pdf.set_fill_color(235, 235, 235)
     for w, h in zip(widths, headers):
-        pdf.cell(w, 7, h, border=1)
+        pdf.cell(w, 7, h, border=1, align="L", fill=True)
     pdf.ln(7)
+    pdf.set_fill_color(255, 255, 255)
     pdf.set_font("Helvetica", "", 9)
     for f in data["findings"]:
         if not f["reportable"]:
             continue
-        row_h = 6
-        # Compute lines for the summary to determine row height
-        pdf.cell(widths[0], row_h, f["finding_id"], border=1)
-        pdf.cell(widths[1], row_h, f["finding_type"], border=1)
-        pdf.cell(widths[2], row_h, f["severity"], border=1)
-        x = pdf.get_x()
-        y = pdf.get_y()
-        pdf.multi_cell(widths[3], row_h, f["explanation"][:200], border=1)
-        # Move to next line
-        pdf.set_xy(pdf.l_margin, max(pdf.get_y(), y + row_h))
+        cells = [
+            f["finding_id"],
+            f["severity"].upper(),
+            f["policy_area"],
+            f["source_section"],
+            f["review_status"],
+        ]
+        # Equal-height single-line row to keep table tidy
+        for w, c in zip(widths, cells):
+            pdf.cell(w, 6, c[: max(1, int(w / 1.6))], border=1, align="L")
+        pdf.ln(6)
+    pdf.set_draw_color(0, 0, 0)
+    pdf.ln(3)
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(110, 110, 110)
+    pdf.multi_cell(
+        0,
+        5,
+        "Each finding has a detail page below with the source excerpt, the "
+        "AI-proposed claim, the policy tension, the provenance trail, and a "
+        "counsel review box.",
+    )
+    pdf.set_text_color(0, 0, 0)
+
+
+def _counsel_review_box(pdf: ExceptionReportPDF) -> None:
+    pdf.ln(2)
+    box_left = pdf.l_margin
+    box_right = pdf.w - pdf.r_margin
+    box_width = box_right - box_left
+    start_y = pdf.get_y()
+
+    # Compute the height we need
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 7, "Counsel Review", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, "[  ]  Approved Concession", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, "[  ]  Rejected", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, "[  ]  Escalated", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(1)
+    pdf.cell(0, 6, "Rationale:", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, "_________________________________________________________________", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, "_________________________________________________________________", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(1)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(28, 6, "Reviewer:")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(85, 6, "_____________________________")
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(15, 6, "Date:")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, "_____________________", new_x="LMARGIN", new_y="NEXT")
+    end_y = pdf.get_y()
+
+    # Draw the box around the area we just wrote
+    pdf.set_draw_color(80, 80, 80)
+    pdf.rect(box_left - 1, start_y - 1, box_width + 2, end_y - start_y + 2)
+    pdf.set_draw_color(0, 0, 0)
 
 
 def render_finding_detail(pdf: ExceptionReportPDF, finding: dict) -> None:
@@ -257,10 +353,11 @@ def render_finding_detail(pdf: ExceptionReportPDF, finding: dict) -> None:
     _h1(pdf, f"Finding {finding['finding_id']}")
     _kv(pdf, "Type", finding["finding_type"])
     _kv(pdf, "Severity", finding["severity"])
+    _kv(pdf, "Policy area", finding["policy_area"])
     _kv(pdf, "Reportable", "Yes" if finding["reportable"] else "No")
-    pdf.ln(2)
+    _rule(pdf)
 
-    _h2(pdf, "Source Span")
+    _h2(pdf, "1. Source Evidence")
     span = finding["span"]
     if span:
         _kv(pdf, "Span ID", span.get("span_id", ""))
@@ -270,13 +367,14 @@ def render_finding_detail(pdf: ExceptionReportPDF, finding: dict) -> None:
         pdf.ln(1)
         _h3(pdf, "Excerpt")
         _para(pdf, span.get("text", ""))
-    pdf.ln(2)
+    _rule(pdf)
 
-    _h2(pdf, "AI-Proposed Claim")
+    _h2(pdf, "2. AI-Proposed Claim")
     _kv(pdf, "Claim ID", finding["claim_id"])
     _para(pdf, finding["claim_text"])
+    _rule(pdf)
 
-    _h2(pdf, "Policy Tension")
+    _h2(pdf, "3. Policy Tension")
     policy = finding["policy"]
     if policy:
         _kv(pdf, "Policy ID", policy.get("policy_id", ""))
@@ -290,8 +388,9 @@ def render_finding_detail(pdf: ExceptionReportPDF, finding: dict) -> None:
     pdf.ln(1)
     _h3(pdf, "Explanation")
     _para(pdf, finding["explanation"])
+    _rule(pdf)
 
-    _h2(pdf, "Provenance Trail")
+    _h2(pdf, "4. Provenance Trail")
     clause = finding.get("clause") or {}
     if clause:
         _kv(pdf, "Vendor clause", f"{clause.get('clause_id','')} ({clause.get('source_status','')})")
@@ -299,17 +398,10 @@ def render_finding_detail(pdf: ExceptionReportPDF, finding: dict) -> None:
     _kv(pdf, "Claim -> ModelRun", "EXTRACTED_BY")
     _kv(pdf, "Claim -> Policy", "TENSIONS_WITH")
     _kv(pdf, "Finding -> Claim", "BASED_ON")
+    _rule(pdf)
 
-    _h2(pdf, "Human Review")
-    pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 7, "[  ]  Approved Concession", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 7, "[  ]  Rejected", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 7, "[  ]  Escalated", new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(2)
-    _kv(pdf, "Rationale", "________________________________________________________________")
-    pdf.ln(4)
-    _kv(pdf, "Reviewer signature", "________________________________________________________________")
-    _kv(pdf, "Date", "________________________________________________________________")
+    _h2(pdf, "5. Counsel Review")
+    _counsel_review_box(pdf)
 
 
 def build_pdf(data: dict, output_path: Path) -> Path:
